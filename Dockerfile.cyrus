@@ -1,0 +1,21 @@
+FROM debian:trixie
+
+RUN apt -y update
+RUN apt-get install -y cyrus-imapd \
+                       libsasl2-modules \
+                       supervisor \
+                       rsyslog \
+                       libcurl4-openssl-dev \
+                       git \
+                       build-essential \
+                       libpam-dev
+
+RUN git clone https://github.com/CyberDem0n/pam-oauth2.git
+RUN cd pam-oauth2 && git submodule init && git submodule update && make && make install
+
+RUN echo "auth sufficient pam_oauth2.so https://foo.org/oauth2/tokeninfo?access_token= uid grp=tester" > /etc/pam.d/imap
+
+VOLUME /etc/cyrus-conf
+
+CMD ["supervisord", "-c", "/etc/cyrus-conf/supervisord.conf", "-n"]
+
