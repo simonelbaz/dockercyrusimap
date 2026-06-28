@@ -8,14 +8,30 @@ RUN apt-get install -y cyrus-imapd \
                        libcurl4-openssl-dev \
                        git \
                        build-essential \
+                       cyrus-admin \
+                       cyrus-clients \
+                       sasl2-bin \
+                       curl \
                        libpam-dev
 
-RUN git clone https://github.com/CyberDem0n/pam-oauth2.git
+#RUN git clone https://github.com/CyberDem0n/pam-oauth2.git
+#RUN git clone https://github.com/simonelbaz/pam-oauth2.git
+COPY pam-oauth2 pam-oauth2
 RUN cd pam-oauth2 && git submodule init && git submodule update && make && make install
 
-RUN echo "auth sufficient pam_oauth2.so https://foo.org/oauth2/tokeninfo?access_token= uid grp=tester" > /etc/pam.d/imap
+#RUN echo "auth sufficient pam_oauth2.so https://foo.org/oauth2/tokeninfo?access_token= uid grp=tester" > /etc/pam.d/imap
 
-VOLUME /etc/cyrus-conf
+RUN mkdir -p /var-imap/lib/cyrus
+RUN chown -R cyrus:mail /var-imap/
+
+# Disable kernel logging (not available in containers)
+RUN sed -i '/imklog/s/^/#/' /etc/rsyslog.conf
+RUN ln -sf /proc/1/fd/1 /var/log/syslog
+
+VOLUME /etc/cyrus-conf \
+       /etc/pam.d \
+       /var-imap/ \
+       /var/run/saslauthd/
 
 CMD ["supervisord", "-c", "/etc/cyrus-conf/supervisord.conf", "-n"]
 
