@@ -1,0 +1,18 @@
+FROM debian:trixie
+
+RUN apt -y update
+RUN apt-get install -y libcurl4-openssl-dev \
+                       git \
+                       build-essential \
+                       automake \
+                       libtool \
+                       gawk \
+                       liblmdb-dev \
+                       libpam0g-dev \
+                       curl
+
+RUN --mount=type=bind,target=/mnt/cyrus-sasl,rw cd /mnt/cyrus-sasl && autoreconf && ./autogen.sh && make && make install
+
+VOLUME /var/run/saslauthd
+
+CMD ["/usr/local/sbin/saslauthd", "-a", "pam", "-n", "10", "-m", "/var/run/saslauthd", "-l", "-d"]

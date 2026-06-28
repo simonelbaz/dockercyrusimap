@@ -1,0 +1,18 @@
+FROM debian:trixie
+
+RUN apt -y update
+RUN apt-get install -y build-essential \
+                       libpcre2-dev \
+                       zlib1g zlib1g-dev \
+                       git
+
+#RUN git clone https://github.com/simonelbaz/nginx.git
+#RUN cd nginx && git checkout oauthbearer && auto/configure --with-mail && make && make install
+#COPY --from=project ../nginx /nginx
+COPY nginx /nginx
+WORKDIR /nginx
+RUN auto/configure --with-mail --with-debug
+RUN make && make install
+
+CMD ["/usr/local/nginx/sbin/nginx", "-c", "/etc/nginx/conf/nginx.conf", "-g", "daemon off;"]
+

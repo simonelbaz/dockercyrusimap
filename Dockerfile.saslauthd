@@ -1,0 +1,32 @@
+FROM debian:trixie
+
+RUN apt -y update
+RUN apt-get install -y cyrus-imapd \
+                       libsasl2-modules \
+                       supervisor \
+                       rsyslog \
+                       libcurl4-openssl-dev \
+                       git \
+                       build-essential \
+                       cyrus-admin \
+                       sasl2-bin \
+                       curl \
+                       libpam-dev
+
+#RUN git clone https://github.com/CyberDem0n/pam-oauth2.git
+#RUN git clone https://github.com/simonelbaz/pam-oauth2.git
+COPY ../pam-oauth2 pam-oauth2
+RUN cd pam-oauth2 && git submodule init && git submodule update && make && make install
+
+#RUN echo "51.255.204.129  auth.example.com" >> /etc/hosts
+
+# Disable kernel logging (not available in containers)
+RUN sed -i '/imklog/s/^/#/' /etc/rsyslog.conf
+RUN ln -sf /proc/1/fd/1 /var/log/syslog
+RUN ln -sf /proc/1/fd/1 /var/log/auth.log
+
+VOLUME /etc/cyrus-conf \
+       /etc/pam.d 
+
+CMD ["supervisord", "-c", "/etc/cyrus-conf/supervisord-test.conf", "-n"]
+
